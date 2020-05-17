@@ -1,5 +1,5 @@
 /* -*-  Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil; -*- */
-/*22222222222222
+/*
 * Copyright (c) 2016 SEBASTIEN DERONNE
 * Copyright (c) 2020 AGH University of Science and Technology
 *
@@ -16,9 +16,6 @@
 * along with this program; if not, write to the Free Software
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 *
-* Author: Szymon Szott <szott@kt.agh.edu.pl>
-* Based on he-wifi-network.cc by S. Deronne <sebastien.deronne@gmail.com>
-* Last update: 2020-04-01 07:21:18
 */
 
 #include "ns3/core-module.h"
@@ -58,9 +55,8 @@
 
 
 // Course: Simulation Methods (Metody symulacyjne)
-// Lab exercise: 6
 //
-// This scenario allows to measure the performance of an IEEE 802.11ax Wi-Fi network
+// This scenario allows to measure the performance of an IEEE 802.11ac Wi-Fi network
 // and see the impact of the warmup time and simulation time on the end performance.
 //
 //   AP  STA ... STA
@@ -84,7 +80,7 @@ void PrintFlowMonitorStats();
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE("ms-lab6");
+NS_LOG_COMPONENT_DEFINE("jows2");
 
 //Global variables
 FlowMonitorHelper flowmon;
@@ -110,7 +106,6 @@ int main(int argc, char *argv[])
     bool sgi = false;                           // set shot guard interval (True gi = 400 ns, False gi = 800 ns)
     bool pcap = false;                          // Generate a PCAP file from the AP
     bool useCsv = true;                         // Flag for saving output to CSV file
-    bool useTcp = true;
     uint32_t dataRate = 150; // Aggregate traffic generator data rate [Mb/s]
 
     // Parse command line arguments
@@ -127,7 +122,6 @@ int main(int argc, char *argv[])
     cmd.AddValue("pcap", "Generate a PCAP file from the AP", pcap);
     cmd.AddValue("sgi", "Enable short guard interval for all stations (if set GI = 400 ns, else 800 ns)", sgi);
     cmd.AddValue("useCsv", "Flag for saving output to CSV file", useCsv);
-    cmd.AddValue("useTcp", "Flag for switching to TCP traffic", useTcp);
     cmd.AddValue("dataRate", "Aggregate traffic generator data rate", dataRate);
     cmd.AddValue("warmupTime", "warmup time", warmupTime);
     cmd.Parse(argc, argv);
@@ -287,11 +281,7 @@ int main(int argc, char *argv[])
     // Install applications (traffic generators)
     ApplicationContainer sourceApplications, sinkApplications;
     uint32_t portNumber = 9;
-    std::string socketFactory;
-    if (useTcp)
-        socketFactory = "ns3::TcpSocketFactory";
-    else
-        socketFactory = "ns3::UdpSocketFactory";
+    std::string socketFactory = "ns3::TcpSocketFactory";
 
     for (uint32_t index = 0; index < nWifi; ++index) //Loop over all stations (which transmit to the AP)
     {
@@ -322,7 +312,7 @@ int main(int argc, char *argv[])
     if (useCsv)
     {
         std::string outputCsv;
-        outputCsv = "ms-lab6-" + std::to_string(RngSeedManager::GetRun()) + ".csv";
+        outputCsv = "jows2-" + std::to_string(RngSeedManager::GetRun()) + ".csv";
 
         myfile.open(outputCsv);
         myfile << "SimulationTime,";
@@ -338,7 +328,7 @@ int main(int argc, char *argv[])
     if (pcap)
     {
         phy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11_RADIO);
-        phy.EnablePcap("ms-lab6", apDevice);
+        phy.EnablePcap("jows2", apDevice);
     }
 
     // Define simulation stop time
@@ -360,7 +350,7 @@ int main(int argc, char *argv[])
     std::cout << "Elapsed time: " << elapsed.count() << " s\n\n";
 
     // Save FlowMonitor results to an XML file
-    // flowmon.SerializeToXmlFile ("ms-lab6.xml", false, false);
+    // flowmon.SerializeToXmlFile ("jows2.xml", false, false);
 
     if (useCsv)
         myfile.close();
