@@ -45,10 +45,17 @@
 #include "ns3/abort.h"
 #include "ns3/mobility-model.h"
 #include "ns3/flow-monitor-module.h"
+#include "ns3/applications-module.h"
+#include "ns3/error-model.h"
+#include "ns3/traffic-control-module.h"
+#include "ns3/tcp-header.h"
+#include "ns3/udp-header.h"
+#include "ns3/internet-module.h"
 #include <fstream>
 #include <iostream>
 #include <ctime>
 #include <iomanip>
+
 
 // Course: Simulation Methods (Metody symulacyjne)
 // Lab exercise: 6
@@ -92,21 +99,26 @@ int main(int argc, char *argv[])
 {
 
     // Initialize default simulation parameters
-    uint32_t nWifi = 1;                    //Number of transmitting stations
-    int mcs = 1;                          // Default MCS is set to highest value
-    int channelWidth = 20;                 //Default channel width [MHz]
-    std::string lossModel = "LogDistance"; //Propagation loss model
-    std::string positioning = "disc";      //Position allocator
-    double simulationTime = 10;            // Simulation time [s]
-    double radius = 10;                    // Radius of node placement disc [m]
-    bool sgi = false;                      // set shot guard interval (True gi = 400 ns, False gi = 800 ns)
-    bool pcap = false;                     // Generate a PCAP file from the AP
-    bool useCsv = true;                    // Flag for saving output to CSV file
+    std::string transport_prot = "TcpWestwood"; // Transport Protocol
+    uint32_t nWifi = 1;                         // Number of transmitting stations
+    int mcs = 1;                                // Default MCS is set to highest value
+    int channelWidth = 20;                      // Default channel width [MHz]
+    std::string lossModel = "LogDistance";      // Propagation loss model
+    std::string positioning = "disc";           // Position allocator
+    double simulationTime = 10;                 // Simulation time [s]
+    double radius = 10;                         // Radius of node placement disc [m]
+    bool sgi = false;                           // set shot guard interval (True gi = 400 ns, False gi = 800 ns)
+    bool pcap = false;                          // Generate a PCAP file from the AP
+    bool useCsv = true;                         // Flag for saving output to CSV file
     bool useTcp = true;
     uint32_t dataRate = 150; // Aggregate traffic generator data rate [Mb/s]
 
     // Parse command line arguments
     CommandLine cmd;
+    cmd.AddValue ("transport_prot", "Transport protocol to use: TcpNewReno, "
+                "TcpHybla, TcpHighSpeed, TcpHtcp, TcpVegas, TcpScalable, TcpVeno, "
+                "TcpBic, TcpYeah, TcpIllinois, TcpWestwood, TcpWestwoodPlus, TcpLedbat, "
+		        "TcpLp", transport_prot);
     cmd.AddValue("mcs", "Select a specific MCS (0-9)", mcs);
     cmd.AddValue("simulationTime", "Duration of simulation", simulationTime);
     cmd.AddValue("nWifi", "Number of station", nWifi);
@@ -119,11 +131,11 @@ int main(int argc, char *argv[])
     cmd.AddValue("dataRate", "Aggregate traffic generator data rate", dataRate);
     cmd.AddValue("warmupTime", "warmup time", warmupTime);
     cmd.Parse(argc, argv);
-
     // Print simulation settings to screen
     std::cout << std::endl
               << "Simulating an IEEE 802.11ac network with the following settings:" << std::endl;
     std::cout << "- number of transmitting stations: " << nWifi << std::endl;
+    std::cout << "- TCP Variant: " << transport_prot << std::endl;
     std::cout << "- frequency band: 5 GHz" << std::endl;
     std::cout << "- modulation and coding scheme (MCS): " << mcs << std::endl;
     std::cout << "- channel width: " << channelWidth << " MHz" << std::endl;
@@ -131,6 +143,30 @@ int main(int argc, char *argv[])
     std::cout << "- disc radius: " << radius << std::endl;
     std::cout << "- simulation time: " << simulationTime << std::endl;
     std::cout << "- warmup time: " << warmupTime << std::endl;
+    if (sgi){
+        std::cout << "- guard interval: 400 ms" << std::endl;
+    }
+    else
+    {
+        std::cout << "- guard interval: 800 ms" << std::endl;
+    }
+    
+
+    transport_prot = std::string ("ns3::") + transport_prot;
+    // Select TCP variant
+    if (transport_prot.compare ("ns3::TcpWestwoodPlus") == 0)
+    { 
+        // TcpWestwoodPlus is not an actual TypeId name; we need TcpWestwood here
+        Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TcpWestwood::GetTypeId ()));
+        // the default protocol type in ns3::TcpWestwood is WESTWOOD
+        Config::SetDefault ("ns3::TcpWestwood::ProtocolType", EnumValue (TcpWestwood::WESTWOODPLUS));
+    }
+    else
+    {
+        TypeId tcpTid;
+        NS_ABORT_MSG_UNLESS (TypeId::LookupByNameFailSafe (transport_prot, &tcpTid), "TypeId " << transport_prot << " not found");
+        Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TypeId::LookupByName (transport_prot)));
+    }
 
     // Create AP and stations
     NodeContainer wifiApNode;
