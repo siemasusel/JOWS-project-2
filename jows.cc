@@ -88,7 +88,7 @@ Ptr<FlowMonitor> monitor;
 std::ofstream myfile;
 uint32_t rxBytesWarmup[MAXFLOWS] = {0};
 uint32_t rxBytesPrev = 0;
-uint32_t warmupTime = 10;
+uint32_t warmupTime = 1;
 uint32_t interval = 1; //Interval for calculating instantaneous throughput [s]
 
 int main(int argc, char *argv[])
@@ -106,6 +106,7 @@ int main(int argc, char *argv[])
     bool sgi = false;                           // set shot guard interval (True gi = 400 ns, False gi = 800 ns)
     bool pcap = false;                          // Generate a PCAP file from the AP
     bool useCsv = true;                         // Flag for saving output to CSV file
+    bool delayStart = false;                    // Add some jitter for station start time
     uint32_t dataRate = 150; // Aggregate traffic generator data rate [Mb/s]
 
     // Parse command line arguments
@@ -124,6 +125,7 @@ int main(int argc, char *argv[])
     cmd.AddValue("useCsv", "Flag for saving output to CSV file", useCsv);
     cmd.AddValue("dataRate", "Aggregate traffic generator data rate", dataRate);
     cmd.AddValue("warmupTime", "warmup time", warmupTime);
+    cmd.AddValue("delayStart", "Jitter for station start time", delayStart);
     cmd.Parse(argc, argv);
     // Print simulation settings to screen
     std::cout << std::endl
@@ -297,13 +299,28 @@ int main(int argc, char *argv[])
 
     // Configure application start/stop times
     // Note:
-    // - source starts transmission at 1.0 s
-    // - source stops at simulationTime+1
-    // - simulationTime reflects the time when data is sent
+    // - if delayStart enabled delay is calculated as flowNumber/nWifi (eg. for 4 stations delays = [0, 0.25, 0.5, 0.75])
+    // - if delayStart disable delay = 0 for all flows
+    // - source starts transmission at 1.0 + delay s 
+    // - source stops at simulationTime + 1
+    // - simulationTime reflects the time when data begins to send
     sinkApplications.Start(Seconds(0.0));
     sinkApplications.Stop(Seconds(simulationTime + 1));
-    sourceApplications.Start(Seconds(1.0));
+    double delay = 0;
+    int flowNumber = 0;
+    ApplicationContainer::Iterator i;
+    for (i = sourceApplications.Begin (); i != sourceApplications.End (); ++i, ++flowNumber)
+    {
+        if (delayStart)
+        {
+            delay = flowNumber/(double)nWifi;
+        }
+        (*i)->SetStartTime (Seconds(1.0 + delay));
+    
+    }
     sourceApplications.Stop(Seconds(simulationTime + 1));
+    
+    
 
     //Install FlowMonitor
     monitor = flowmon.InstallAll();
@@ -321,7 +338,7 @@ int main(int argc, char *argv[])
             myfile << "Flow" << i + 1 << ",";
         }
         myfile << "InstantThr,TotalThr" << std::endl;
-        Simulator::Schedule(Seconds(warmupTime), &PrintFlowMonitorStats); //Schedule printing stats to file
+        Simulator::Schedule(Seconds(1), &PrintFlowMonitorStats); //Schedule printing stats to file
     }
 
     // Generate PCAP at AP
@@ -350,7 +367,7 @@ int main(int argc, char *argv[])
     std::cout << "Elapsed time: " << elapsed.count() << " s\n\n";
 
     // Save FlowMonitor results to an XML file
-    // flowmon.SerializeToXmlFile ("jows2.xml", false, false);
+    flowmon.SerializeToXmlFile ("jows2.xml", false, false);
 
     if (useCsv)
         myfile.close();
