@@ -318,9 +318,7 @@ int main(int argc, char *argv[])
         (*i)->SetStartTime (Seconds(1.0 + delay));
     
     }
-    sourceApplications.Stop(Seconds(simulationTime + 1));
-    
-    
+    sourceApplications.Stop(Seconds(simulationTime + 1)); 
 
     //Install FlowMonitor
     monitor = flowmon.InstallAll();
