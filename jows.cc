@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
     bool sgi = false;                           // set shot guard interval (True gi = 400 ns, False gi = 800 ns)
     bool pcap = false;                          // Generate a PCAP file from the AP
     bool useCsv = true;                         // Flag for saving output to CSV file
-    bool delayStart = false;                    // Add some jitter for station start time
+    double delayStart = 0;                         // Add some jitter for station start time
     uint32_t dataRate = 150; // Aggregate traffic generator data rate [Mb/s]
 
     // Parse command line arguments
@@ -124,8 +124,8 @@ int main(int argc, char *argv[])
     cmd.AddValue("sgi", "Enable short guard interval for all stations (if set GI = 400 ns, else 800 ns)", sgi);
     cmd.AddValue("useCsv", "Flag for saving output to CSV file", useCsv);
     cmd.AddValue("dataRate", "Aggregate traffic generator data rate", dataRate);
-    cmd.AddValue("warmupTime", "warmup time", warmupTime);
-    cmd.AddValue("delayStart", "Jitter for station start time", delayStart);
+    cmd.AddValue("warmupTime", "Warmup time", warmupTime);
+    cmd.AddValue("delayStart", "How long will it take to start all stations", delayStart);
     cmd.Parse(argc, argv);
     // Print simulation settings to screen
     std::cout << std::endl
@@ -310,10 +310,7 @@ int main(int argc, char *argv[])
     ApplicationContainer::Iterator i;
     for (i = sourceApplications.Begin (); i != sourceApplications.End (); ++i, ++flowNumber)
     {
-        if (delayStart)
-        {
-            delay = flowNumber/(double)nWifi;
-        }
+        delay = delayStart*flowNumber/(double)nWifi;
         (*i)->SetStartTime (Seconds(1.0 + delay));
     
     }
