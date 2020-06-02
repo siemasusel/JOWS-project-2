@@ -298,8 +298,8 @@ int main(int argc, char *argv[])
 
     // Configure application start/stop times
     // Note:
-    // - if delayStart enabled delay is calculated as flowNumber/nWifi (eg. for 4 stations delays = [0, 0.25, 0.5, 0.75])
-    // - if delayStart disable delay = 0 for all flows
+    // - stations start with some delay, calculated as follow: delayStart * flowNumber / nWifi (eg. for delayStart = 2 and 4 stations delays = [0, 0.5, 1, 1.5])
+    // - if delayStart = 0 disable delay for all flows
     // - source starts transmission at 1.0 + delay s 
     // - source stops at simulationTime + 1
     // - simulationTime reflects the time when data begins to send
