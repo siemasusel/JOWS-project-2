@@ -132,7 +132,6 @@ int main(int argc, char *argv[])
               << "Simulating an IEEE 802.11ac network with the following settings:" << std::endl;
     std::cout << "- number of transmitting stations: " << nWifi << std::endl;
     std::cout << "- TCP Variant: " << transport_prot << std::endl;
-    std::cout << "- frequency band: 5 GHz" << std::endl;
     std::cout << "- modulation and coding scheme (MCS): " << mcs << std::endl;
     std::cout << "- channel width: " << channelWidth << " MHz" << std::endl;
     std::cout << "- position allocator: " << positioning << std::endl;
@@ -178,10 +177,10 @@ int main(int argc, char *argv[])
     // Create and configure Wi-Fi network
     WifiMacHelper mac;
     WifiHelper wifi;
-    wifi.SetStandard(WIFI_PHY_STANDARD_80211ax_5GHZ);
+    wifi.SetStandard(WIFI_PHY_STANDARD_80211ac);
 
     std::ostringstream oss;
-    oss << "HeMcs" << mcs;
+    oss << "VhtMcs" << mcs;
     wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue(oss.str()),
                                  "ControlMode", StringValue(oss.str())); //Set MCS
 
@@ -318,7 +317,7 @@ int main(int argc, char *argv[])
         (*i)->SetStartTime (Seconds(1.0 + delay));
     
     }
-    sourceApplications.Stop(Seconds(simulationTime + 1)); 
+    sourceApplications.Stop(Seconds(simulationTime + 1));
 
     //Install FlowMonitor
     monitor = flowmon.InstallAll();
